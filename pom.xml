@@ -31,6 +31,11 @@
             <organizationUrl>https://www.melioratestlab.com</organizationUrl>
         </developer>
     </developers>
+    <scm>
+        <connection>scm:git:ssh://github.com:melioraltd/testlab-maven-plugin.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com:melioraltd/testlab-maven-plugin.git</developerConnection>
+        <url>https://github.com/melioraltd/testlab-maven-plugin</url>
+    </scm>
 
     <reporting>
         <plugins>
@@ -91,23 +96,11 @@
                     </execution>
                 </executions>
             </plugin>
-            <!--<plugin>-->
-                <!--<groupId>org.apache.maven.plugins</groupId>-->
-                <!--<artifactId>maven-gpg-plugin</artifactId>-->
-                <!--<version>1.4</version>-->
-                <!--<executions>-->
-                    <!--<execution>-->
-                        <!--<id>sign-artifacts</id>-->
-                        <!--<phase>verify</phase>-->
-                        <!--<goals>-->
-                            <!--<goal>sign</goal>-->
-                        <!--</goals>-->
-                    <!--</execution>-->
-                <!--</executions>-->
-                <!--&lt;!&ndash;<configuration>&ndash;&gt;-->
-                    <!--&lt;!&ndash;<keyname>FOOFOOFOO</keyname>&ndash;&gt;-->
-                <!--&lt;!&ndash;</configuration>&ndash;&gt;-->
-            <!--</plugin>-->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>2.5.3</version>
+            </plugin>
         </plugins>
     </build>
 
