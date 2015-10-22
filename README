@@ -1,0 +1,5 @@
+Meliora Testlab Maven Plugin
+
+Publishes xUnit-compatible testing results to Meliora Testlab.
+
+For documentation, please see https://www.melioratestlab.com/maven-plugin

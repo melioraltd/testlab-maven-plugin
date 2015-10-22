@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+    <body>
+        <menu name="Overview">
+            <item name="Introduction" href="index.html"/>
+            <item name="Goals" href="plugin-info.html"/>
+            <item name="Usage" href="usage.html"/>
+        </menu>
+
+        <!--<links>-->
+            <!--<item name="Testlab documentation" href="https://www.melioratestlab.com/maven-plugin"/>-->
+            <!--<item name="Meliora Testlab" href="https://www.melioratestlab.com"/>-->
+        <!--</links>-->
+    </body>
+
+    <skin>
+        <groupId>org.apache.maven.skins</groupId>
+        <artifactId>maven-fluido-skin</artifactId>
+        <version>1.4</version>
+    </skin>
+</project>
