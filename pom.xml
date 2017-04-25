@@ -8,7 +8,7 @@
 
     <name>Meliora Testlab Maven Plugin</name>
     <description>
-        Publishes xUnit-compatible testing results to Meliora Testlab - Official location of the documentation
+        Publishes testing results to Meliora Testlab - Official location of the documentation
         is https://www.melioratestlab.com/maven-plugin
     </description>
     <url>https://www.melioratestlab.com/maven-plugin</url>

@@ -28,6 +28,8 @@ import java.util.*;
  */
 @Mojo(name = "publish", defaultPhase = LifecyclePhase.VERIFY)
 public class TestResultMojo extends AbstractMojo {
+    public static final String FORMAT_JUNIT = "junit";
+    public static final String FORMAT_ROBOT = "robot";
 
     /**
      * Company ID of the hosted Testlab you want to publish the results to. If your testlab is accessed from
@@ -216,7 +218,7 @@ public class TestResultMojo extends AbstractMojo {
     private String importTestCasesRootCategory;
 
     /**
-     * File resource patterns to find the xUnit's .xml files to push the
+     * File resource patterns to find the xUnit's .xml files or Robot Framework's output.xml file to push the
      * actual results from.
      * <br/>
      * <pre>
@@ -271,6 +273,47 @@ public class TestResultMojo extends AbstractMojo {
     @Parameter(property = "it.test")
     private String failsafeTest;
 
+    /**
+     * Format of the result resources to publish. "junit" for standard xUnit formatted files and
+     * "robot" for Robot Framework's output files. Defaults to "junit".
+     */
+    @Parameter
+    private String format = FORMAT_JUNIT;
+
+    /**
+     * If true, when the xml file containing the results is in Robot Framework format, and in the
+     * xml keyword has sub keywords, the sub keywords are catenated
+     * to a single step in the result. For example, if the robot result has
+     * <br>
+     * <pre>
+     *     &lt;kw name="Open site"&gt;
+     *         &lt;kw name="Open URL"&gt;
+     *             &lt;kw name="Navigate browser"&gt;
+     *                 ...
+     *             &lt;/kw&gt;
+     *         &lt;/kw&gt;
+     *     &lt;/kw&gt;
+     *     ...
+     * </pre>
+     * <br>
+     * .. the test case is added with a single step described as "Open site - Open URL - Navigate browser".
+     * When concatenating, if a step fails it is always included as a step.
+     * <br>
+     * If false, each sub keyword will generate a separate step to the result.
+     * <br>
+     * This value defaults to true.
+     *
+     * @param robotCatenateParentKeywords boolean
+     */
+    @Parameter
+    private boolean robotCatenateParentKeywords = true;
+
+    /**
+     * Executes this Mojo.
+     *
+     * @throws MojoExecutionException on exception
+     * @throws MojoFailureException on failure
+     */
     public void execute() throws MojoExecutionException, MojoFailureException {
         getLog().info("Publishing test results to Testlab ...");
 
@@ -300,6 +343,10 @@ public class TestResultMojo extends AbstractMojo {
 
         if(resources == null || resources.size() == 0) {
             fail("configuration error: resources must be set.");
+        }
+
+        if(!StringUtils.isBlank(format) && !Arrays.asList(FORMAT_JUNIT, FORMAT_ROBOT).contains(format)) {
+            fail("configuration error: invalid format " + format + " - must be one of: " + FORMAT_JUNIT + " | " + FORMAT_ROBOT);
         }
 
         //// check if the publish should continue or not
@@ -363,6 +410,8 @@ public class TestResultMojo extends AbstractMojo {
                 if(StringUtils.isBlank(importTestCasesRootCategory))
                     importTestCasesRootCategory = "Import";
                 data.setImportTestCasesRootCategory(importTestCasesRootCategory);
+                data.setXmlFormat(format);
+                data.setRobotCatenateParentKeywords(robotCatenateParentKeywords);
 
                 if(tags != null && tags.size() > 0) {
                     data.setTags(StringUtils.join(tags.toArray(), " "));
@@ -379,57 +428,81 @@ public class TestResultMojo extends AbstractMojo {
                     data.setParameters(parameterValues);
                 }
 
-                //// combine all test suites to a single one if multiple xml result files are present
-
-                StringBuilder sb = new StringBuilder();
-                sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n");
-                sb.append("<testsuites>\n");
-
                 boolean hasFailures = false, hasErrors = false;
 
-                for(File f : publishFiles) {
-                    XmlStreamReader r = null;
-                    try {
-                        r = ReaderFactory.newXmlReader(f);
-                        String fileXml = IOUtils.toString(r);
+                StringBuilder sb = new StringBuilder();
+                if(FORMAT_JUNIT.equals(format)) {
+                    //// combine all test suites to a single one if multiple xml result files are present
 
-                        int s = fileXml.indexOf("<");
-                        int e = fileXml.length();
-                        if(s > -1) {
-                            String l = fileXml.toLowerCase();
-                            if(s == l.indexOf("<?xml")) {
-                                // skip prolog
-                                s = l.indexOf("<", s + 1);
-                            }
-                            if(s == l.indexOf("<testsuites")) {
-                                // drop "testsuites"
-                                s = l.indexOf("<testsuite", s + 1);
-                                e = l.indexOf("</testsuites>");
-                            }
-                            fileXml = fileXml.substring(s, e);
+                    sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n");
+                    sb.append("<testsuites>\n");
 
-                            getLog().debug("Test suites from file " + f + ":\n " + fileXml);
+                    for(File f : publishFiles) {
+                        XmlStreamReader r = null;
+                        try {
+                            r = ReaderFactory.newXmlReader(f);
+                            String fileXml = IOUtils.toString(r);
 
-                            if(fileXml.trim().length() > 0) {
-                                sb.append(fileXml);
+                            int s = fileXml.indexOf("<");
+                            int e = fileXml.length();
+                            if(s > -1) {
+                                String l = fileXml.toLowerCase();
+                                if(s == l.indexOf("<?xml")) {
+                                    // skip prolog
+                                    s = l.indexOf("<", s + 1);
+                                }
+                                if(s == l.indexOf("<testsuites")) {
+                                    // drop "testsuites"
+                                    s = l.indexOf("<testsuite", s + 1);
+                                    e = l.indexOf("</testsuites>");
+                                }
+                                fileXml = fileXml.substring(s, e);
 
-                                // try to detect failures or errors
-                                l = fileXml.toLowerCase();
-                                s = l.indexOf("<testsuite ");
-                                if(s > -1) {
-                                    e = l.indexOf(">", s);
-                                    if(e > -1) {
-                                        String testsuiteLine = l.substring(s, e);
-                                        if(testsuiteLine.contains(" failures=") && !testsuiteLine.contains("failures=\"0\"")) {
-                                            hasFailures = true;
-                                        }
-                                        if(testsuiteLine.contains(" errors=") && !testsuiteLine.contains("errors=\"0\"")) {
-                                            hasErrors = true;
+                                getLog().debug("Test suites from file " + f + ":\n " + fileXml);
+
+                                if(fileXml.trim().length() > 0) {
+                                    sb.append(fileXml);
+
+                                    // try to detect failures or errors
+                                    l = fileXml.toLowerCase();
+                                    s = l.indexOf("<testsuite ");
+                                    if(s > -1) {
+                                        e = l.indexOf(">", s);
+                                        if(e > -1) {
+                                            String testsuiteLine = l.substring(s, e);
+                                            if(testsuiteLine.contains(" failures=") && !testsuiteLine.contains("failures=\"0\"")) {
+                                                hasFailures = true;
+                                            }
+                                            if(testsuiteLine.contains(" errors=") && !testsuiteLine.contains("errors=\"0\"")) {
+                                                hasErrors = true;
+                                            }
                                         }
                                     }
                                 }
                             }
+                        } catch (Exception fe) {
+                            getLog().error(fe);
+                        } finally {
+                            if(r != null)
+                                try { r.close(); } catch (Exception ee) {}
                         }
+                    }
+
+                    sb.append("\n</testsuites>");
+                } else if(FORMAT_ROBOT.equals(format)) {
+                    if(publishFiles.size() > 1) {
+                        getLog().error("Resource pattern matches to multiple files. When publishing Robot Framework results, only a single output.xml file is supported.");
+                    }
+                    XmlStreamReader r = null;
+                    try {
+                        r = ReaderFactory.newXmlReader(publishFiles.iterator().next());
+                        String fileXml = IOUtils.toString(r);
+
+                        if(fileXml.contains("status=\"FAIL\"")) {
+                            hasFailures = true;
+                        }
+
+                        sb.append(fileXml);
                     } catch (Exception fe) {
                         getLog().error(fe);
                     } finally {
@@ -438,7 +511,6 @@ public class TestResultMojo extends AbstractMojo {
                     }
                 }
 
-                sb.append("\n</testsuites>");
                 data.setXml(sb.toString());
 
                 getLog().info("Sending results ...");
@@ -496,6 +568,8 @@ public class TestResultMojo extends AbstractMojo {
                 ", resources=" + resources +
                 ", ignoreFailedTests=" + ignoreFailedTests +
                 ", forcePublish=" + forcePublish +
+                ", format=" + format +
+                ", robotCatenateParentKeywords=" + robotCatenateParentKeywords +
                 "}";
     }
 }

@@ -1,5 +1,7 @@
 package fi.meliora.testlab.ext.rest.model;
 
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
@@ -11,6 +13,7 @@ import javax.xml.bind.annotation.XmlRootElement;
  */
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.FIELD)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class TestCaseResultStep extends ModelObject {
     public final static int RESULT_NOTRUN = 0;
     public final static int RESULT_PASS = 1;

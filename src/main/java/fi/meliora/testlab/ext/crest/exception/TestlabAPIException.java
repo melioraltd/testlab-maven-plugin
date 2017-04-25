@@ -12,7 +12,7 @@ public class TestlabAPIException extends CRestException {
     private Object responseData;
 
     public TestlabAPIException(Object responseData) {
-        super();
+        super(String.valueOf(responseData));
         this.responseData = responseData;
     }
 

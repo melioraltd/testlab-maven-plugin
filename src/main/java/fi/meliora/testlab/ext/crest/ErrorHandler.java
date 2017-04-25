@@ -1,6 +1,7 @@
 package fi.meliora.testlab.ext.crest;
 
 import fi.meliora.testlab.ext.crest.exception.NotFoundException;
+import fi.meliora.testlab.ext.crest.exception.TestlabAPIException;
 import org.codegist.crest.io.Request;
 import org.codegist.crest.io.RequestException;
 import org.codegist.crest.io.Response;
@@ -48,11 +49,15 @@ public class ErrorHandler implements org.codegist.crest.handler.ErrorHandler {
                         try { is.close(); } catch (Exception eee) {}
                 }
 
-                log.error(
-                        "Rest call failed with status code {}, response: {}",
-                        testlabResponse.getStatusCode(),
-                        responseData
-                );
+                if(log.isErrorEnabled())
+                    log.error(
+                            "Testlab REST call failed with response '{}', status code {}, exception: {}",
+                            new Object[] {
+                                    responseData,
+                                    testlabResponse.getStatusCode(),
+                                    e
+                            }
+                    );
 
                 // map status code to checked exceptions
                 int statusCode = testlabResponse.getStatusCode();
@@ -60,8 +65,15 @@ public class ErrorHandler implements org.codegist.crest.handler.ErrorHandler {
                     // call returned not found status
                     throw new NotFoundException(responseData);
                 }
+                if(responseData != null && responseData.length() > 0) {
+                    throw new TestlabAPIException(responseData);
+                }
             }
         }
+
+        if(log.isErrorEnabled())
+            log.error("Testlab REST call exception: " + e.getMessage(), e);
+
         if(e.getCause() != null && e.getCause() instanceof Exception) {
             throw (Exception)e.getCause();
         }

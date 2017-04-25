@@ -1,5 +1,7 @@
 package fi.meliora.testlab.ext.rest.model;
 
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
@@ -13,11 +15,16 @@ import java.util.List;
  */
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.FIELD)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class TestResult extends ModelObject {
     public static final int STATUS_NOTSTARTED = 0;
     public static final int STATUS_STARTED = 1;
+    @Deprecated
     public static final int STATUS_ABORTED = 2;
     public static final int STATUS_FINISHED = 3;
+
+    public static final String FORMAT_JUNIT = "junit";
+    public static final String FORMAT_ROBOTFRAMEWORK = "robot";
 
     @XmlElement
     private Long projectId;
@@ -67,6 +74,9 @@ public class TestResult extends ModelObject {
     @XmlElement
     private String xml;
 
+    @XmlElement
+    private String xmlFormat;       // junit | robot, defaults to junit
+
     // control fields
 
     @XmlElement
@@ -85,6 +95,9 @@ public class TestResult extends ModelObject {
     private boolean importTestCases;
     @XmlElement
     private String importTestCasesRootCategory;
+
+    @XmlElement
+    private boolean robotCatenateParentKeywords = true;
 
     public Long getProjectId() {
         return projectId;
@@ -415,5 +428,51 @@ public class TestResult extends ModelObject {
      */
     public void setImportTestCasesRootCategory(String importTestCasesRootCategory) {
         this.importTestCasesRootCategory = importTestCasesRootCategory;
+    }
+
+    public String getXmlFormat() {
+        return xmlFormat;
+    }
+
+    /**
+     * Format for provided xml file. "junit" | "robot" - defaults to "junit".
+     *
+     * @param xmlFormat format
+     */
+    public void setXmlFormat(String xmlFormat) {
+        this.xmlFormat = xmlFormat;
+    }
+
+    public boolean isRobotCatenateParentKeywords() {
+        return robotCatenateParentKeywords;
+    }
+
+    /**
+     * If true, when the xml provided is in Robot Framework format and in the
+     * xml keyword has sub keywords, the sub keywords are catenated
+     * to a single step in the result. For example, if the robot result has
+     * <br>
+     * &lt;pre&gt;
+     *     &lt;kw name="Open site"&gt;
+     *         &lt;kw name="Open URL"&gt;
+     *             &lt;kw name="Navigate browser"&gt;
+     *                 ...
+     *             &lt;/kw&gt;
+     *         &lt;/kw&gt;
+     *     &lt;/kw&gt;
+     *     ...
+     * &lt;/pre&gt;
+     * <br>
+     * .. the test case is added with a single step described as "Open site - Open URL - Navigate browser".
+     * When concatenating, if a step fails it is always included as a step.
+     * <br>
+     * If false, each sub keyword will generate a separate step to the result.
+     * <br>
+     * This value defaults to true.
+     *
+     * @param robotCatenateParentKeywords boolean
+     */
+    public void setRobotCatenateParentKeywords(boolean robotCatenateParentKeywords) {
+        this.robotCatenateParentKeywords = robotCatenateParentKeywords;
     }
 }
