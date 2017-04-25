@@ -45,7 +45,7 @@ public class TestCaseResult extends ModelObject {
     /**
      * Test case id for this result. Optional if mappingId is set.
      *
-     * @param testCaseId
+     * @param testCaseId test case id
      */
     public void setTestCaseId(Long testCaseId) {
         this.testCaseId = testCaseId;
@@ -59,7 +59,7 @@ public class TestCaseResult extends ModelObject {
      * Id value to use to lookup the test case from Testlab. This value is compared
      * against project's custom field value from custom field set in TestResult.testCaseMappingField.
      *
-     * @param mappingId
+     * @param mappingId test case mapping id
      */
     public void setMappingId(String mappingId) {
         this.mappingId = mappingId;
@@ -72,7 +72,7 @@ public class TestCaseResult extends ModelObject {
     /**
      * Result status value for the run test case.
      *
-     * @param result
+     * @param result result
      */
     public void setResult(int result) {
         this.result = result;
@@ -85,7 +85,7 @@ public class TestCaseResult extends ModelObject {
     /**
      * Timestamp of when this test case was started.
      *
-     * @param started
+     * @param started started
      */
     public void setStarted(Long started) {
         this.started = started;
@@ -98,7 +98,7 @@ public class TestCaseResult extends ModelObject {
     /**
      * Timestamp of when this test case was completed.
      *
-     * @param run
+     * @param run run
      */
     public void setRun(Long run) {
         this.run = run;
@@ -111,7 +111,7 @@ public class TestCaseResult extends ModelObject {
     /**
      * Id of the user who ran this test case. Optional.
      *
-     * @param runById
+     * @param runById user id
      */
     public void setRunById(Long runById) {
         this.runById = runById;
@@ -124,7 +124,7 @@ public class TestCaseResult extends ModelObject {
     /**
      * Name of the user who ran this test case. Optional.
      *
-     * @param runBy
+     * @param runBy user name
      */
     public void setRunBy(String runBy) {
         this.runBy = runBy;
@@ -134,7 +134,7 @@ public class TestCaseResult extends ModelObject {
      * Comment (i.e. error description) for this result. This value is used
      * when adding issues for this result.
      *
-     * @return
+     * @return comment
      */
     public String getComment() {
         return comment;
@@ -147,7 +147,7 @@ public class TestCaseResult extends ModelObject {
     /**
      * Optional execution steps and their results for this result.
      *
-     * @return
+     * @return steps
      */
     public List<TestCaseResultStep> getSteps() {
         return steps;

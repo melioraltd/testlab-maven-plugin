@@ -27,10 +27,12 @@ public class CrestEndpointFactory {
     /**
      * Constructs a new CRest endpoint, caches it and returns it for use.
      *
-     * @param url
-     * @param username
-     * @param password
-     * @return
+     * @param url url
+     * @param username user name
+     * @param password password
+     * @param endpointClass endpoint class
+     * @param <T> type
+     * @return endpoint
      */
     public <T>T getEndpoint(String url, String username, String password, Class<T> endpointClass) {
         T endpoint;
@@ -50,15 +52,15 @@ public class CrestEndpointFactory {
      * Returns an endpoint to Testlab.
      *
      * If onpremiseUrl is set it used as a base url. It not, this methods peeks for
-     * TESTLAB_<companyid in upper case> system environment variable for testlab api address.
+     * TESTLAB_&lt;companyid in upper case&gt; system environment variable for testlab api address.
      * If none is set a default of https://companyid.melioratestlab.com/api is used.
      *
-     * @param companyId
-     * @parma onpremiseUrl
-     * @param apiKey
-     * @param endpointClass
-     * @param <T>
-     * @return
+     * @param companyId company id
+     * @param onpremiseUrl onpremise url
+     * @param apiKey api key
+     * @param endpointClass endpoint class
+     * @param <T> type
+     * @return endpoint
      */
     public <T>T getTestlabEndpoint(String companyId, String onpremiseUrl, String apiKey, Class<T> endpointClass) {
         String url;
