@@ -11,6 +11,7 @@ import javax.xml.bind.annotation.XmlRootElement;
  *
  * @author Marko Kanala
  */
+@Deprecated
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.FIELD)
 @JsonIgnoreProperties(ignoreUnknown = true)

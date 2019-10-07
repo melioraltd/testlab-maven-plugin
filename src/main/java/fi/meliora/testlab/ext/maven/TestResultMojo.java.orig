@@ -54,7 +54,34 @@ public class TestResultMojo extends AbstractMojo {
      */
     @Parameter
     private String onpremiseUrl;
-    
+
+    /**
+     * Title of the Testlab's custom field to use to map the test cases to unit test methods.
+     * <br/>
+     * To make it possible to push unit test results to Testlab the
+     * unit test class.method name must be mapped to a test case in your Testlab project:
+     * <br/>
+     * <ol>
+     * <li>
+     * Configure a new "text" custom field to your project at Testlab side. Give
+     * the field a human readable title such as "JUnit test".
+     * </li>
+     * <li>
+     * Update your test cases at Testlab side and enter proper JUnit test
+     * class+method name pairs for your test cases.
+     * </li>
+     * <li>
+     * Enter "JUnit test" to this parameter in plugin configuration. This way when
+     * unit tests in the build fail they will be mapped to test cases with
+     * matching "JUnit test" names at Testlab side. When publishing Testlab
+     * will peek the set custom field of a test case and if it matches the class.method name
+     * of a failed unit test the test case will be marked as failed.
+     * </li>
+     * </ol>
+     */
+    @Parameter(required = true)
+    private String testCaseMappingField;
+
     /**
      * The key of the Testlab project you want to publish the results to.
      */
@@ -62,35 +89,12 @@ public class TestResultMojo extends AbstractMojo {
     private String projectKey;
 
     /**
-     * Name of the ruleset to apply to these results. Test result rulesets are configured in the
-     * "Test automation" UI in Testlab. If not set, a default ruleset for the project is used.
-     */
-    @Parameter
-    private String ruleset;
-
-    /**
-     * Source is used to identify results, so that two test runs with the same source name should contain results
-     * for same, or similar tests.
-     */
-    @Parameter
-    private String automationSource;
-
-    /**
-     * If set, this will be used as a name for the results (file) added to Testlab.
-     *
-     * For example, this can be set as an URL (for example Jenkins job URL) or the name of the
-     * result file you are pushing the results from.
-     */
-    @Parameter
-    private String resultName;
-
-    /**
      * The name of the Testlab test run to create or update.
      * <br/>
-     * If a test run with same name, version, milestone and automation source already exists in Testlab it will be always replaced with
+     * If a test run with same name already exists in Testlab it will be always replaced with
      * test results when this plugin is run. If it does not it will be created.
      */
-    @Parameter
+    @Parameter(required = true)
     private String testRun;
     /**
      * The "created by" user name of the test run created or updated. Defaults to "Maven".
@@ -99,16 +103,16 @@ public class TestResultMojo extends AbstractMojo {
     private String testRunUser;
 
     /**
-     * A description to be set for the Testlab test run to create or update.
+     * A comment to be set for the Testlab test run to create or update.
      * <br/>
      * Hint: You can use Maven's properties in all the configuration variables
-     * and in the testRunDescription field this is especially handy. Use the
+     * and in the testRunComment field this is especially handy. Use the
      * <code>project.*</code>, <code>settings.*</code> and <code>env.*</code>
      * variables to decorate your configuration as needed. The variables
      * are referenced in typical format such as ${project.version}.
      */
     @Parameter
-    private String testRunDescription;
+    private String testRunComment;
     /**
      * Milestone in Testlab the results and issues are bound to. Milestone <b>must exist</b>
      * in the project. If milestone does not exist the results and issues are added without
@@ -162,26 +166,10 @@ public class TestResultMojo extends AbstractMojo {
     private Map parameters;
 
     /**
-     * <p>
-     *     When to add issues for failing tests. One of:
-     *         <ul>
-     *             <li>
-     *                 <b>DONOTADD: Do not add issues</b>
-     *             </li>
-     *             <li>
-     *                 <b>ADDPERTESTRUN: Add issues per test run:</b> Adds a single issue per test run, and the issue's description contains details on failed tests
-     *             </li>
-     *             <li>
-     *                 <b>ADDPERTESTCASE: Add an issue per Testlab test case:</b> Adds an issue for every failed Testlab test case, and the test case's description contains details on failed tests
-     *             </li>
-     *             <li>
-     *                 <b>ADDPERRESULT: Add an issue per test result:</b> Adds an issue for every failed result
-     *             </li>
-     *         </ul>
-     * </p>
+     * If true, issues will be added to the Testlab project for failing tests.
      */
-    @Parameter(defaultValue = "DONOTADD")
-    private TestResult.AddIssueStrategy addIssueStrategy;
+    @Parameter
+    private boolean addIssues;
     /**
      * When set to Testlab's user id value for an user who has a role in the set project
      * the added issue(s) are automatically assigned to this user.
@@ -210,6 +198,24 @@ public class TestResultMojo extends AbstractMojo {
      */
     @Parameter
     private boolean reopenExistingIssues;
+    /**
+     * If set, added issues are merged to a single issue. Checking this option
+     * results always in a maximum of a single issue added per plugin execution.
+     */
+    @Parameter
+    private boolean mergeAsSingleIssue;
+
+    /**
+     * If set, automatically creates test cases when publishing.
+     */
+    @Parameter
+    private boolean importTestCases;
+
+    /**
+     * If set, sets the root category path where the test cases are created. By default, "Import".
+     */
+    @Parameter
+    private String importTestCasesRootCategory;
 
     /**
      * File resource patterns to find the xUnit's .xml files or Robot Framework's output.xml file to push the
@@ -323,6 +329,10 @@ public class TestResultMojo extends AbstractMojo {
             fail("configuration error: companyId or onpremiseUrl must be set.");
         }
 
+        if(StringUtils.isBlank(testCaseMappingField)) {
+            fail("configuration error: testCaseMappingField must be set.");
+        }
+
         if(StringUtils.isBlank(projectKey)) {
             fail("configuration error: projectKey must be set.");
         }
@@ -381,26 +391,25 @@ public class TestResultMojo extends AbstractMojo {
                 //// let's publish
 
                 TestResult data = new TestResult();
+                data.setStatus(fi.meliora.testlab.ext.rest.model.TestResult.STATUS_FINISHED);
                 data.setProjectKey(projectKey);
-
                 data.setTestRunTitle(testRun);
-
-                data.setRuleset(ruleset);
-                data.setAutomationSourceTitle(automationSource);
-                data.setResultName(resultName);
-
-                data.setAddIssueStrategy(addIssueStrategy);
-                data.setReopenExistingIssues(reopenExistingIssues);
-                data.setAssignIssuesToUser(assignIssuesToUser);
-                
-                data.setUser(StringUtils.isBlank(testRunUser) ? "Maven" : testRunUser);
-                data.setDescription(testRunDescription);
                 // note: we send the set milestone in both fields as backend logic tries first with identifier and fallbacks to title
                 data.setMilestoneIdentifier(milestone);
                 data.setMilestoneTitle(milestone);
+                data.setAddIssues(addIssues);
+                data.setMergeAsSingleIssue(mergeAsSingleIssue);
+                data.setReopenExistingIssues(reopenExistingIssues);
+                data.setAssignIssuesToUser(assignIssuesToUser);
+                data.setTestCaseMappingField(testCaseMappingField);
+                data.setUser(StringUtils.isBlank(testRunUser) ? "Maven" : testRunUser);
+                data.setComment(testRunComment);
                 data.setTestTargetTitle(version);
                 data.setTestEnvironmentTitle(testEnvironment);
-
+                data.setImportTestCases(importTestCases);
+                if(StringUtils.isBlank(importTestCasesRootCategory))
+                    importTestCasesRootCategory = "Import";
+                data.setImportTestCasesRootCategory(importTestCasesRootCategory);
                 data.setXmlFormat(format);
                 data.setRobotCatenateParentKeywords(robotCatenateParentKeywords);
 
@@ -537,31 +546,30 @@ public class TestResultMojo extends AbstractMojo {
     @Override
     public String toString() {
         return "fi.meliora.testlab.ext.maven.TestResultMojo{" +
-                "companyId='" + companyId + '\'' +
-                ", apiKey='...'" +
+                "addIssues=" + addIssues +
+                ", companyId='" + companyId + '\'' +
+                ", apiKey='" + apiKey + '\'' +
                 ", onpremiseUrl='" + onpremiseUrl + '\'' +
+                ", testCaseMappingField='" + testCaseMappingField + '\'' +
                 ", projectKey='" + projectKey + '\'' +
-                ", ruleset='" + ruleset + '\'' +
-                ", automationSource='" + automationSource + '\'' +
-                ", resultName='" + resultName + '\'' +
                 ", testRun='" + testRun + '\'' +
                 ", testRunUser='" + testRunUser + '\'' +
-                ", testRunDescription='" + testRunDescription + '\'' +
+                ", testRunComment='" + testRunComment + '\'' +
                 ", milestone='" + milestone + '\'' +
                 ", version='" + version + '\'' +
                 ", testEnvironment='" + testEnvironment + '\'' +
                 ", tags=" + tags +
                 ", parameters=" + parameters +
-                ", addIssueStrategy=" + addIssueStrategy +
                 ", assignIssuesToUser='" + assignIssuesToUser + '\'' +
                 ", reopenExistingIssues=" + reopenExistingIssues +
+                ", mergeAsSingleIssue=" + mergeAsSingleIssue +
+                ", importTestCases=" + importTestCases +
+                ", importTestCasesRootCategory='" + importTestCasesRootCategory + '\'' +
                 ", resources=" + resources +
                 ", ignoreFailedTests=" + ignoreFailedTests +
                 ", forcePublish=" + forcePublish +
-                ", surefireTest='" + surefireTest + '\'' +
-                ", failsafeTest='" + failsafeTest + '\'' +
-                ", format='" + format + '\'' +
+                ", format=" + format +
                 ", robotCatenateParentKeywords=" + robotCatenateParentKeywords +
-                "} " + super.toString();
+                "}";
     }
 }

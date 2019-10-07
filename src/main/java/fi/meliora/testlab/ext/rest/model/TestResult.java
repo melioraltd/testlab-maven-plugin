@@ -17,14 +17,16 @@ import java.util.List;
 @XmlAccessorType(XmlAccessType.FIELD)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TestResult extends ModelObject {
-    public static final int STATUS_NOTSTARTED = 0;
-    public static final int STATUS_STARTED = 1;
-    @Deprecated
-    public static final int STATUS_ABORTED = 2;
-    public static final int STATUS_FINISHED = 3;
 
     public static final String FORMAT_JUNIT = "junit";
     public static final String FORMAT_ROBOTFRAMEWORK = "robot";
+
+    public enum AddIssueStrategy {
+        DONOTADD,
+        ADDPERTESTRUN,
+        ADDPERTESTCASE,
+        ADDPERRESULT
+    }
 
     @XmlElement
     private Long projectId;
@@ -32,15 +34,21 @@ public class TestResult extends ModelObject {
     private String projectKey;
 
     @XmlElement
+    private String ruleset;
+
+    @XmlElement
+    private Long automationSourceId;
+
+    @XmlElement
+    private String automationSourceTitle;
+
+    @XmlElement
     private Long testRunId;
     @XmlElement
     private String testRunTitle;
 
     @XmlElement
-    private String comment;
-
-    @XmlElement
-    private int status;
+    private String description;
 
     @XmlElement
     private String user;
@@ -79,25 +87,34 @@ public class TestResult extends ModelObject {
 
     // control fields
 
+    @Deprecated
     @XmlElement
     private String testCaseMappingField;
 
     @XmlElement
-    private boolean addIssues;
+    private AddIssueStrategy addIssueStrategy;
     @XmlElement
-    private boolean mergeAsSingleIssue;
-    @XmlElement
-    private boolean reopenExistingIssues;
+    private Boolean reopenExistingIssues;
     @XmlElement
     private String assignIssuesToUser;
 
+    @Deprecated
     @XmlElement
-    private boolean importTestCases;
+    private Boolean importTestCases;
+    @Deprecated
     @XmlElement
     private String importTestCasesRootCategory;
 
     @XmlElement
-    private boolean robotCatenateParentKeywords = true;
+    private Boolean robotCatenateParentKeywords = true;
+
+    /**
+     * Optional. If set, this will be used as a name for the results (file) added to Testlab.
+     * For example, this can be set as an URL (for example Jenkins job URL) or the name of the
+     * result file you are pushing the results from.
+     */
+    @XmlElement
+    private String resultName;
 
     public Long getProjectId() {
         return projectId;
@@ -123,6 +140,20 @@ public class TestResult extends ModelObject {
      */
     public void setProjectKey(String projectKey) {
         this.projectKey = projectKey;
+    }
+
+    public String getRuleset() {
+        return ruleset;
+    }
+
+    /**
+     * Name of the ruleset to apply to these results. Test result rulesets are configured in the
+     * "Test automation" UI in Testlab. If not set, a default ruleset for the project is used.
+     *
+     * @param ruleset name of the ruleset
+     */
+    public void setRuleset(String ruleset) {
+        this.ruleset = ruleset;
     }
 
     public Long getTestRunId() {
@@ -151,31 +182,27 @@ public class TestResult extends ModelObject {
         this.testRunTitle = testRunTitle;
     }
 
-    public String getComment() {
-        return comment;
+    public void setAutomationSourceId(Long automationSourceId) { this.automationSourceId = automationSourceId; }
+    public Long getAutomationSourceId() { return automationSourceId; }
+
+    /**
+     * @param automationSourceTitle Source of test results
+     */
+    public void setAutomationSourceTitle(String automationSourceTitle) { this.automationSourceTitle = automationSourceTitle; }
+    public String getAutomationSourceTitle() { return automationSourceTitle; }
+
+    public String getDescription() {
+        return description;
     }
 
     /**
-     * Comment for the test run. If test run exists and comment is left as null the comment
+     * Description for the test run. If test run exists and description is left as null the description
      * of TestRun at Testlab is left as it is.
      *
-     * @param comment comment
+     * @param description comment
      */
-    public void setComment(String comment) {
-        this.comment = comment;
-    }
-
-    public int getStatus() {
-        return status;
-    }
-
-    /**
-     * Status for test run.
-     *
-     * @param status status
-     */
-    public void setStatus(int status) {
-        this.status = status;
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public String getUser() {
@@ -295,6 +322,7 @@ public class TestResult extends ModelObject {
         this.tags = tags;
     }
 
+    @Deprecated
     public String getTestCaseMappingField() {
         return testCaseMappingField;
     }
@@ -307,6 +335,7 @@ public class TestResult extends ModelObject {
      *
      * @param testCaseMappingField test case mapping field
      */
+    @Deprecated
     public void setTestCaseMappingField(String testCaseMappingField) {
         this.testCaseMappingField = testCaseMappingField;
     }
@@ -337,42 +366,28 @@ public class TestResult extends ModelObject {
         this.results = results;
     }
 
-    public boolean isAddIssues() {
-        return addIssues;
+    public AddIssueStrategy getAddIssueStrategy() {
+        return addIssueStrategy;
     }
 
     /**
-     * Set to true to add issues for failed test cases.
-     *
-     * @param addIssues boolean
+     * When to add issues for failed results. Never, one issue per test run, one issue per Testlab test case, or one issue per test result
+     * @param addIssueStrategy TestResult.AddIssueStrategy
      */
-    public void setAddIssues(boolean addIssues) {
-        this.addIssues = addIssues;
+    public void setAddIssueStrategy(AddIssueStrategy addIssueStrategy) {
+        this.addIssueStrategy = addIssueStrategy;
     }
 
-    public boolean isMergeAsSingleIssue() {
-        return mergeAsSingleIssue;
-    }
-
-    /**
-     * Set to true to merge added issues to a single issue.
-     *
-     * @param mergeAsSingleIssue boolean
-     */
-    public void setMergeAsSingleIssue(boolean mergeAsSingleIssue) {
-        this.mergeAsSingleIssue = mergeAsSingleIssue;
-    }
-
-    public boolean isReopenExistingIssues() {
+    public Boolean getReopenExistingIssues() {
         return reopenExistingIssues;
     }
 
     /**
      * Set to true to reopen existing issues in Testlab if found.
      *
-     * @param reopenExistingIssues boolean
+     * @param reopenExistingIssues Boolean
      */
-    public void setReopenExistingIssues(boolean reopenExistingIssues) {
+    public void setReopenExistingIssues(Boolean reopenExistingIssues) {
         this.reopenExistingIssues = reopenExistingIssues;
     }
 
@@ -403,7 +418,8 @@ public class TestResult extends ModelObject {
         this.xml = xml;
     }
 
-    public boolean isImportTestCases() {
+    @Deprecated
+    public Boolean isImportTestCases() {
         return importTestCases;
     }
 
@@ -413,10 +429,12 @@ public class TestResult extends ModelObject {
      *
      * @param importTestCases boolean
      */
-    public void setImportTestCases(boolean importTestCases) {
+    @Deprecated
+    public void setImportTestCases(Boolean importTestCases) {
         this.importTestCases = importTestCases;
     }
 
+    @Deprecated
     public String getImportTestCasesRootCategory() {
         return importTestCasesRootCategory;
     }
@@ -426,6 +444,7 @@ public class TestResult extends ModelObject {
      *
      * @param importTestCasesRootCategory boolean
      */
+    @Deprecated
     public void setImportTestCasesRootCategory(String importTestCasesRootCategory) {
         this.importTestCasesRootCategory = importTestCasesRootCategory;
     }
@@ -443,7 +462,7 @@ public class TestResult extends ModelObject {
         this.xmlFormat = xmlFormat;
     }
 
-    public boolean isRobotCatenateParentKeywords() {
+    public Boolean isRobotCatenateParentKeywords() {
         return robotCatenateParentKeywords;
     }
 
@@ -472,7 +491,10 @@ public class TestResult extends ModelObject {
      *
      * @param robotCatenateParentKeywords boolean
      */
-    public void setRobotCatenateParentKeywords(boolean robotCatenateParentKeywords) {
+    public void setRobotCatenateParentKeywords(Boolean robotCatenateParentKeywords) {
         this.robotCatenateParentKeywords = robotCatenateParentKeywords;
     }
+
+    public String getResultName() { return resultName; }
+    public void setResultName(String resultName) { this.resultName = resultName; }
 }
