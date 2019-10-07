@@ -3,7 +3,7 @@
 
     <groupId>fi.meliora</groupId>
     <artifactId>testlab-maven-plugin</artifactId>
-    <version>1.2-SNAPSHOT</version>
+    <version>1.2</version>
     <packaging>maven-plugin</packaging>
 
     <name>Meliora Testlab Maven Plugin</name>
@@ -35,7 +35,7 @@
         <connection>scm:git:git://github.com/melioraltd/testlab-maven-plugin.git</connection>
         <developerConnection>scm:git:git@github.com:melioraltd/testlab-maven-plugin.git</developerConnection>
         <url>https://github.com/melioraltd/testlab-maven-plugin</url>
-      <tag>HEAD</tag>
+      <tag>testlab-maven-plugin-1.2</tag>
   </scm>
     <distributionManagement>
         <repository>
