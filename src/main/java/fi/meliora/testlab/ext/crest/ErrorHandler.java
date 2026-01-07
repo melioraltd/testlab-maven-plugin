@@ -86,7 +86,11 @@ public class ErrorHandler implements org.codegist.crest.handler.ErrorHandler {
             // could not read response, just ignore
         } finally {
             if(is != null)
-                try { is.close(); } catch (Exception ee) {}
+                try {
+                    is.close();
+                } catch (Exception ee) {
+                    // just ignore
+                }
         }
         return responseData;
     }

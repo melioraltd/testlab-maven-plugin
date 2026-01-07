@@ -118,7 +118,7 @@ public class ModelObject implements Serializable {
                             buf.append(o);
                         }
                     }
-                } catch (Exception iae) {
+                } catch (Throwable iae) {
                     buf.append("[call to getter failed]");
                 }
                 buf.append("</");

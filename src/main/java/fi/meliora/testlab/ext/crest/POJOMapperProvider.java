@@ -1,8 +1,8 @@
 package fi.meliora.testlab.ext.crest;
 
-import org.codehaus.jackson.map.AnnotationIntrospector;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.introspect.JacksonAnnotationIntrospector;
+import com.fasterxml.jackson.databind.AnnotationIntrospector;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,8 +24,8 @@ public class POJOMapperProvider implements ContextResolver<ObjectMapper> {
     public POJOMapperProvider() {
         mapper = new ObjectMapper();
         AnnotationIntrospector jacksonIntrospector = new JacksonAnnotationIntrospector();
-        mapper.setDeserializationConfig(mapper.getDeserializationConfig().withAnnotationIntrospector(jacksonIntrospector));
-        mapper.setSerializationConfig(mapper.getSerializationConfig().withAnnotationIntrospector(jacksonIntrospector));
+        mapper.setConfig(mapper.getDeserializationConfig().with(jacksonIntrospector));
+        mapper.setConfig(mapper.getSerializationConfig().with(jacksonIntrospector));
         if(log.isDebugEnabled())
             log.debug("Constructed ObjectMapper with POJOMapperProvider.");
     }

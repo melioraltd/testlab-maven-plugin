@@ -1,11 +1,11 @@
 package org.codegist.crest.serializer.jackson;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.codegist.crest.CRestConfig;
 import org.codegist.crest.entity.EntityWriter;
 import org.codegist.crest.io.Request;
 import org.codegist.crest.param.Param;
 import org.codegist.crest.serializer.Serializer;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +29,7 @@ import java.util.List;
 public class JsonEntityWriter implements EntityWriter {
     private static final Logger log = LoggerFactory.getLogger(JsonEntityWriter.class);
 
-    public class JsonEncodedFormJacksonSerializer implements
+    public static class JsonEncodedFormJacksonSerializer implements
             Serializer<List<Param>> {
 
         private final ObjectMapper jackson;
@@ -49,7 +49,6 @@ public class JsonEntityWriter implements EntityWriter {
                         log.debug("serialize value: {}", o.getClass());
                     }
                 }
-
                 jackson.writeValue(out, list[0]);
             } else {
                 if(log.isDebugEnabled())
